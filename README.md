@@ -87,5 +87,54 @@ Active-Active (активный-активный) и Active-Passive (актив�
 
 *Пришлите файл конфигурации.*
 
+Ответ:
+
+Исходил из расчета, что облако берется в Yandex Cloud. В данном примере создается две секции: backup-sda1 и backup-sda4, которые отвечают за соответствующий раздел. Для каждой секции указывается настройки пути, комментария, пользователя и группы, а также устанавливаются параметры чтения/записи, игнорирования ошибок, исключение папки lost+found.
+
+Содержимое файла rsync.conf
+
+```
+# Общие настройки
+max connections = 5
+timeout = 300
+
+# Настройки для /dev/sda1
+[backup-sda1]
+path = /mnt/backup/sda1/
+comment = "Backup for /dev/sda1"
+uid = root
+gid = root
+read only = false
+use chroot = true
+ignore errors = true
+exclude = lost+found/
+
+# Настройки для /dev/sda4
+[backup-sda4]
+path = /mnt/backup/sda4/
+comment = "Backup for /dev/sda4"
+uid = root
+gid = root
+read only = false
+use chroot = true
+ignore errors = true
+exclude = lost+found/
+```
+
+Команды для занесения в crontab 
+
+```
+#Полный бэкап
+sudo rsync -acvzhPHle "ssh -p 5022" --bwlimit=’1000’ --delete root@<IP_адрес_экземпляра_в_Yandex_Cloud>:/dev/sda1  /mnt/backup/sda1
+sudo rsync -acvzhPHle "ssh -p 5022" --bwlimit=’1000’ --delete root@<IP_адрес_экземпляра_в_Yandex_Cloud>:/dev/sda4  /mnt/backup/sda4
+
+#Инкрементальный бэкап
+sudo rsync -avzhPHle "ssh -p 5022" --bwlimit=’1000’ --backup --backup-dir=/mnt/backup/sda1/`date "+%Y-%m-%d_%T"` root@<IP_адрес_экземпляра_в_Yandex_Cloud>:/dev/sda1 /mnt/backup/sda1
+sudo rsync -avzhPHle "ssh -p 5022" --bwlimit=’1000’ --backup --backup-dir=/mnt/backup/sda4/`date "+%Y-%m-%d_%T"` root@<IP_адрес_экземпляра_в_Yandex_Cloud>:/dev/sda1 /mnt/backup/sda4
+```
+
+Ниже скриншот запуска на самом сервере.
+
+![img](img/3.PNG)
 
 
